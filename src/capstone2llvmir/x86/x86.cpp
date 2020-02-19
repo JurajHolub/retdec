@@ -25,6 +25,11 @@ Capstone2LlvmIrTranslatorX86_impl::Capstone2LlvmIrTranslatorX86_impl(
 	initialize();
 }
 
+Capstone2LlvmIrTranslatorX86_impl::~Capstone2LlvmIrTranslatorX86_impl()
+{
+	// Nothing specific to x86.
+}
+
 //
 //==============================================================================
 // Mode query & modification methods - from Capstone2LlvmIrTranslator.
@@ -1274,9 +1279,8 @@ Capstone2LlvmIrTranslatorX86_impl::loadOpFloatingNullaryOrUnaryTop(
 			op0 = loadOpUnary(
 					xi,
 					irb,
-					nullptr,
 					llvm::Type::getX86_FP80Ty(_module->getContext()),
-					eOpConv::SITOFP_OR_FPCAST);
+					eOpConv::SITOFP);
 		}
 		// X86_INS_FLD
 		else
@@ -1284,9 +1288,9 @@ Capstone2LlvmIrTranslatorX86_impl::loadOpFloatingNullaryOrUnaryTop(
 			op0 = loadOpUnary(
 					xi,
 					irb,
-					llvm::Type::getFloatTy(_module->getContext()),
 					llvm::Type::getX86_FP80Ty(_module->getContext()),
-					eOpConv::FPCAST_OR_BITCAST);
+					eOpConv::FP_CAST,
+					llvm::Type::getFloatTy(_module->getContext()));
 		}
 	}
 	else
@@ -1368,9 +1372,8 @@ Capstone2LlvmIrTranslatorX86_impl::loadOpFloatingBinaryTop(
 			op1 = loadOpUnary(
 					xi,
 					irb,
-					nullptr,
 					llvm::Type::getX86_FP80Ty(_module->getContext()),
-					eOpConv::SITOFP_OR_FPCAST);
+					eOpConv::SITOFP);
 		}
 		else if ( i->id == X86_INS_FICOM
 				|| i->id == X86_INS_FICOMP)
@@ -1379,9 +1382,8 @@ Capstone2LlvmIrTranslatorX86_impl::loadOpFloatingBinaryTop(
 			op1 = loadOpUnary(
 					xi,
 					irb,
-					nullptr,
 					llvm::Type::getX86_FP80Ty(_module->getContext()),
-					eOpConv::UITOFP_OR_FPCAST);
+					eOpConv::UITOFP);
 		}
 		else
 		{
@@ -1389,9 +1391,9 @@ Capstone2LlvmIrTranslatorX86_impl::loadOpFloatingBinaryTop(
 			op1 = loadOpUnary(
 					xi,
 					irb,
-					llvm::Type::getFloatTy(_module->getContext()),
 					llvm::Type::getX86_FP80Ty(_module->getContext()),
-					eOpConv::FPCAST_OR_BITCAST);
+					eOpConv::FP_CAST,
+					llvm::Type::getFloatTy(_module->getContext()));
 		}
 
 		idx = top;
@@ -1761,7 +1763,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateAad(cs_insn* i, cs_x86* xi, llv
 	}
 	else
 	{
-		op0 = loadOpUnary(xi, irb, nullptr, ah->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+		op0 = loadOpUnary(xi, irb, ah->getType(), eOpConv::ZEXT_TRUNC);
 	}
 
 	auto* mul = irb.CreateMul(ah, op0);
@@ -1788,7 +1790,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateAam(cs_insn* i, cs_x86* xi, llv
 	}
 	else
 	{
-		op0 = loadOpUnary(xi, irb, nullptr, al->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+		op0 = loadOpUnary(xi, irb, al->getType(), eOpConv::ZEXT_TRUNC);
 	}
 
 	auto* div = irb.CreateUDiv(al, op0);
@@ -1809,13 +1811,13 @@ void Capstone2LlvmIrTranslatorX86_impl::translateAdc(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 	uint32_t cfReg = X86_REG_CF; // X86_INS_ADC || X86_INS_ADCX
 	if (i->id == X86_INS_ADOX)
 	{
 		cfReg = X86_REG_OF;
 	}
-	auto* cf = loadRegister(cfReg, irb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto* cf = loadRegister(cfReg, irb, op0->getType(), eOpConv::ZEXT_TRUNC);
 
 	auto* add1 = irb.CreateAdd(op0, op1);
 	auto* add = irb.CreateAdd(add1, cf);
@@ -1837,7 +1839,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateAdd(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 
 	auto* add = irb.CreateAdd(op0, op1);
 
@@ -1859,7 +1861,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateAnd(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 
 	auto* andOp = irb.CreateAnd(op0, op1);
 
@@ -1927,7 +1929,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateBt(cs_insn* i, cs_x86* xi, llvm
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	op1 = irb.CreateAnd(op1, llvm::ConstantInt::get(op1->getType(), op0BitW - 1));
 	auto* shl = irb.CreateShl(llvm::ConstantInt::get(op1->getType(), 1), op1);
@@ -1943,7 +1945,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateBtc(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	op1 = irb.CreateAnd(op1, llvm::ConstantInt::get(op1->getType(), op0BitW - 1));
 
@@ -1968,7 +1970,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateBtr(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	op1 = irb.CreateAnd(op1, llvm::ConstantInt::get(op1->getType(), op0BitW - 1));
 	auto* shl = irb.CreateShl(llvm::ConstantInt::get(op1->getType(), 1), op1);
@@ -1988,7 +1990,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateBts(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	op1 = irb.CreateAnd(op1, llvm::ConstantInt::get(op1->getType(), op0BitW - 1));
 	auto* shl = irb.CreateShl(llvm::ConstantInt::get(op1->getType(), 1), op1);
@@ -2123,7 +2125,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateCmpxchg(cs_insn* i, cs_x86* xi,
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 	auto* accum = loadRegister(getAccumulatorRegister(xi->operands[0].size), irb);
 
 	auto* sub = irb.CreateSub(accum, op0);
@@ -2153,8 +2155,8 @@ void Capstone2LlvmIrTranslatorX86_impl::translateCmpxchg8b(cs_insn* i, cs_x86* x
 	EXPECT_IS_UNARY(i, xi, irb);
 
 	op0 = loadOpUnary(xi, irb);
-	auto* eax = loadRegister(X86_REG_EAX, irb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
-	auto* edx = loadRegister(X86_REG_EDX, irb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto* eax = loadRegister(X86_REG_EAX, irb, op0->getType(), eOpConv::ZEXT_TRUNC);
+	auto* edx = loadRegister(X86_REG_EDX, irb, op0->getType(), eOpConv::ZEXT_TRUNC);
 	edx = irb.CreateShl(edx, 32);
 	auto* rval = irb.CreateOr(edx, eax);
 	auto* cnd = irb.CreateICmpEQ(op0, rval);
@@ -2163,8 +2165,8 @@ void Capstone2LlvmIrTranslatorX86_impl::translateCmpxchg8b(cs_insn* i, cs_x86* x
 	llvm::IRBuilder<>& bodyIf(irbP.first), bodyElse(irbP.second);
 
 	storeRegister(X86_REG_ZF, bodyIf.getInt1(true), bodyIf);
-	auto* ecx = loadRegister(X86_REG_ECX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
-	auto* ebx = loadRegister(X86_REG_EBX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto* ecx = loadRegister(X86_REG_ECX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC);
+	auto* ebx = loadRegister(X86_REG_EBX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC);
 	ecx = bodyIf.CreateShl(ecx, 32);
 	auto* res = bodyIf.CreateOr(ecx, ebx);
 	storeOp(xi->operands[0], res, bodyIf);
@@ -2184,8 +2186,8 @@ void Capstone2LlvmIrTranslatorX86_impl::translateCmpxchg16b(cs_insn* i, cs_x86* 
 	EXPECT_IS_UNARY(i, xi, irb);
 
 	op0 = loadOpUnary(xi, irb);
-	auto* rax = loadRegister(X86_REG_RAX, irb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
-	auto* rdx = loadRegister(X86_REG_RDX, irb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto* rax = loadRegister(X86_REG_RAX, irb, op0->getType(), eOpConv::ZEXT_TRUNC);
+	auto* rdx = loadRegister(X86_REG_RDX, irb, op0->getType(), eOpConv::ZEXT_TRUNC);
 	rdx = irb.CreateShl(rdx, 64);
 	auto* rval = irb.CreateOr(rdx, rax);
 	auto* cnd = irb.CreateICmpEQ(op0, rval);
@@ -2194,8 +2196,8 @@ void Capstone2LlvmIrTranslatorX86_impl::translateCmpxchg16b(cs_insn* i, cs_x86* 
 	llvm::IRBuilder<>& bodyIf(irbP.first), bodyElse(irbP.second);
 
 	storeRegister(X86_REG_ZF, bodyIf.getInt1(true), bodyIf);
-	auto* rcx = loadRegister(X86_REG_RCX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
-	auto* rbx = loadRegister(X86_REG_RBX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto* rcx = loadRegister(X86_REG_RCX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC);
+	auto* rbx = loadRegister(X86_REG_RBX, bodyIf, op0->getType(), eOpConv::ZEXT_TRUNC);
 	rcx = bodyIf.CreateShl(rcx, 64);
 	auto* res = bodyIf.CreateOr(rcx, rbx);
 	storeOp(xi->operands[0], res, bodyIf);
@@ -2239,7 +2241,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateImul(cs_insn* i, cs_x86* xi, ll
 	}
 	else if (xi->op_count == 2)
 	{
-		std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+		std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 
 		auto* origType = op0->getType();
 		unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
@@ -2633,14 +2635,14 @@ void Capstone2LlvmIrTranslatorX86_impl::translateMov(cs_insn* i, cs_x86* xi, llv
 	{
 		case X86_INS_MOV:
 		case X86_INS_MOVABS:
-			storeOp(xi->operands[0], op1, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+			storeOp(xi->operands[0], op1, irb, eOpConv::ZEXT_TRUNC);
 			break;
 		case X86_INS_MOVSX:
 		case X86_INS_MOVSXD:
-			storeOp(xi->operands[0], op1, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+			storeOp(xi->operands[0], op1, irb, eOpConv::SEXT_TRUNC);
 			break;
 		case X86_INS_MOVZX:
-			storeOp(xi->operands[0], op1, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+			storeOp(xi->operands[0], op1, irb, eOpConv::ZEXT_TRUNC);
 			break;
 		default:
 			throw GenericError("Unhandle instr ID in translateMov().");
@@ -2844,7 +2846,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateOr(cs_insn* i, cs_x86* xi, llvm
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 
 	auto* orOp = irb.CreateOr(op0, op1);
 
@@ -3246,8 +3248,8 @@ void Capstone2LlvmIrTranslatorX86_impl::translateSbb(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
-	auto* cf = loadRegister(X86_REG_CF, irb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
+	auto* cf = loadRegister(X86_REG_CF, irb, op0->getType(), eOpConv::ZEXT_TRUNC);
 
 	op1 = irb.CreateAdd(op1, cf);
 	auto* sub = irb.CreateSub(op0, op1);
@@ -3451,7 +3453,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateRcr(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	auto* doubleT = llvm::Type::getIntNTy(_module->getContext(), op0BitW*2);
 	unsigned maskC = op0BitW == 64 ? 0x3f : 0x1f;
@@ -3461,7 +3463,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateRcr(cs_insn* i, cs_x86* xi, llv
 
 	auto bodyIrb = generateIfThen(op1NotZero, irb);
 
-	auto* cf = loadRegister(X86_REG_CF, bodyIrb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto* cf = loadRegister(X86_REG_CF, bodyIrb, op0->getType(), eOpConv::ZEXT_TRUNC);
 
 	auto* srl = bodyIrb.CreateLShr(op0, op1);
 	auto* srlZext = bodyIrb.CreateZExt(srl, doubleT);
@@ -3498,7 +3500,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateRcl(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	auto* doubleT = llvm::Type::getIntNTy(_module->getContext(), op0BitW*2);
 	unsigned maskC = op0BitW == 64 ? 0x3f : 0x1f;
@@ -3508,7 +3510,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateRcl(cs_insn* i, cs_x86* xi, llv
 
 	auto bodyIrb = generateIfThen(op1NotZero, irb);
 
-	auto* cf = loadRegister(X86_REG_CF, bodyIrb, op0->getType(), eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto* cf = loadRegister(X86_REG_CF, bodyIrb, op0->getType(), eOpConv::ZEXT_TRUNC);
 
 	auto* shl = bodyIrb.CreateShl(op0, op1);
 	auto* shlZext = bodyIrb.CreateZExt(shl, doubleT);
@@ -3544,7 +3546,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateRol(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	unsigned maskC = op0BitW == 64 ? 0x3f : 0x1f;
 	auto* mask = llvm::ConstantInt::get(op1->getType(), maskC);
@@ -3579,7 +3581,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateRor(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::ZEXT_TRUNC);
 	unsigned op0BitW = llvm::cast<llvm::IntegerType>(op0->getType())->getBitWidth();
 	unsigned maskC = op0BitW == 64 ? 0x3f : 0x1f;
 	auto* mask = llvm::ConstantInt::get(op1->getType(), maskC);
@@ -3634,7 +3636,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateSub(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 
 	auto* sub = irb.CreateSub(op0, op1);
 
@@ -3708,7 +3710,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateXor(cs_insn* i, cs_x86* xi, llv
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC_OR_BITCAST);
+	std::tie(op0, op1) = loadOpBinary(xi, irb, eOpConv::SEXT_TRUNC);
 
 	auto* xorOp = irb.CreateXor(op0, op1);
 
@@ -4489,7 +4491,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateFst(cs_insn* i, cs_x86* xi, llv
 	}
 	else
 	{
-		storeOp(xi->operands[0], src, irb, eOpConv::FPCAST_OR_BITCAST);
+		storeOp(xi->operands[0], src, irb, eOpConv::FP_CAST);
 	}
 
 	if (i->id == X86_INS_FSTP)
@@ -5132,7 +5134,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateFxsave(cs_insn *i, cs_x86 *xi, 
 		addr = irb.CreateAdd(addr, idxR);
 	}
 
-	auto val = generateTypeConversion(irb, c, retType, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+	auto val = generateTypeConversion(irb, c, retType, eOpConv::ZEXT_TRUNC);
 
 	auto* pt = llvm::PointerType::get(retType, getAddrSpace(xi->operands[0].mem.segment));
 	addr = irb.CreateIntToPtr(addr, pt);
@@ -5203,17 +5205,6 @@ void Capstone2LlvmIrTranslatorX86_impl::translateFxstor(cs_insn *i, cs_x86 *xi, 
 			llvm::ArrayRef<llvm::Type*>{op0->getType()});
 
 	irb.CreateCall(fnc, llvm::ArrayRef<llvm::Value*>{op0});
-}
-
-/**
- * X86_INS_FNSTSW
- */
-void Capstone2LlvmIrTranslatorX86_impl::translateFnstsw(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb)
-{
-	EXPECT_IS_UNARY(i, xi, irb);
-
-	auto* fpsw = loadRegister(X86_REG_FPSW, irb);
-	storeOp(xi->operands[0], fpsw, irb);
 }
 
 /**
@@ -5302,6 +5293,7 @@ void Capstone2LlvmIrTranslatorX86_impl::translateFxam(cs_insn* i, cs_x86* xi, ll
 {
 	EXPECT_IS_NULLARY(i, xi, irb);
 	std::tie(op0, top) = loadOpFloatingNullaryOrUnaryTop(i, xi, irb);
+
 
 	llvm::Function* fnc = getPseudoAsmFunction(
 		i,
