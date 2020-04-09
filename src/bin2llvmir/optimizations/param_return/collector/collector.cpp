@@ -65,7 +65,7 @@ void Collector::collectDefArgs(DataFlowEntry* dataflow) const
 		if (auto* l = dyn_cast<LoadInst>(&*it))
 		{
 			auto* ptr = l->getPointerOperand();
-			if (!_abi->isGeneralPurposeRegister(ptr) && !_abi->isStackVariable(ptr))
+			if (!_abi->isRegister(ptr) && !_abi->isStackVariable(ptr))
 			{
 				continue;
 			}
@@ -169,6 +169,11 @@ void Collector::collectStoresBeforeInstruction(
 			stores.end(),
 			[values](StoreInst* s)
 			{
+				if (auto* l = dyn_cast<LoadInst>(s->getPointerOperand()))
+				{
+					return values.find(
+						l->getPointerOperand()) == values.end();
+				}
 				return values.find(
 					s->getPointerOperand()) == values.end();
 			}),
@@ -224,6 +229,13 @@ void Collector::collectStoresInSinglePredecessors(
 		else if (auto* store = dyn_cast<StoreInst>(prev))
 		{
 			auto* ptr = store->getPointerOperand();
+			if (auto* l = dyn_cast<LoadInst>(ptr))
+			{
+				if (_abi->isRegister(l->getPointerOperand()))
+				{
+					ptr = l->getPointerOperand();
+				}
+			}
 
 			if (disqualifiedValues.find(ptr) == disqualifiedValues.end()
 				&& (_abi->isRegister(ptr) || _abi->isStackVariable(ptr)))
@@ -350,6 +362,13 @@ bool Collector::collectStoresInInstructionBlock(
 					excluded.insert(l->getPointerOperand());
 				}
 			}
+			if (auto* l = dyn_cast<LoadInst>(ptr))
+			{
+				if (_abi->isRegister(l->getPointerOperand()))
+				{
+					ptr = l->getPointerOperand();
+				}
+			}
 
 			if (excluded.find(ptr) == excluded.end())
 			{
@@ -449,7 +468,7 @@ bool Collector::collectLoadsAfterInstruction(
 			auto* ptr = load->getPointerOperand();
 
 			if (excluded.find(ptr) == excluded.end()
-				&& ( _abi->isGeneralPurposeRegister(ptr) || _abi->isStackVariable(ptr) ))
+				&& ( _abi->isRegister(ptr) || _abi->isStackVariable(ptr) ))
 			{
 				loads.push_back(load);
 			}
