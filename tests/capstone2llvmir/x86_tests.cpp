@@ -13553,7 +13553,7 @@ TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_FXRSTOR64_memory_operand)
 	EXPECT_JUST_MEMORY_LOADED({0x1234});
 	EXPECT_NO_MEMORY_STORED();
 	EXPECT_JUST_VALUES_CALLED({
-		{_module.getFunction("__asm_fxrstor"), {0xffff}},
+		{_module.getFunction("__asm_fxrstor64"), {0xffff}},
 	});
 }
 
@@ -13576,7 +13576,7 @@ TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_FXRSTOR64_register_operand)
 	EXPECT_JUST_MEMORY_LOADED({0x1234});
 	EXPECT_NO_MEMORY_STORED();
 	EXPECT_JUST_VALUES_CALLED({
-		{_module.getFunction("__asm_fxrstor"), {0xffff}},
+		{_module.getFunction("__asm_fxrstor64"), {0xffff}},
 	});
 }
 
@@ -13630,51 +13630,815 @@ TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_FXTRACT)
 	});
 	EXPECT_JUST_REGISTERS_LOADED({X86_REG_ST1, X87_REG_TOP});
 	EXPECT_NO_MEMORY_LOADED_STORED();
-	EXPECT_VALUES_CALLED({
-		{_module.getFunction("__pseudo_get_significand"), {17.0}},
-		{_module.getFunction("__pseudo_get_exponent"), {17.0}},
-	});
 }
 
+
 //
-// X86_INS_FNSTSW
+// X86_INS_ADDSS
 //
 
-// DD /7	FNSTSW m2byte	Store FPU status word at m2byte without checking for pending unmasked floating-point exceptions.
-TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_FNSTSW_m2byte)
-{
-	ALL_MODES;
-
-	setRegisters({
-						 {X86_REG_FPSW, 0xFF},
-						 });
-
-	emulate("fnstsw [0x1234]");
-
-	EXPECT_JUST_REGISTERS_LOADED({X86_REG_FPSW});
-	EXPECT_NO_REGISTERS_STORED();
-	EXPECT_NO_MEMORY_LOADED();
-	EXPECT_JUST_MEMORY_STORED({
-									  {0x1234, 0xFF_dw},
-							  });
-}
-
-// DF E0	FNSTSW AX	Store FPU status word in AX register without checking for pending unmasked floating-point exceptions.
-TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_FNSTSW_AX)
+// F3 0F 58 /r	ADDSS xmm1, xmm2		Add the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDSS_reg_reg)
 {
 	SKIP_MODE_16;
 
 	setRegisters({
-						 {X86_REG_FPSW, 0xFF},
-				 });
+		{X86_REG_XMM1, ANY},
+		{X86_REG_XMM2, ANY},
+	});
 
-	emulate("fnstsw AX");
+	emulate("addss xmm1, xmm2");
 
-	EXPECT_JUST_REGISTERS_LOADED({X86_REG_FPSW, X86_REG_AX});
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3, X86_REG_XMMF2_3});
 	EXPECT_JUST_REGISTERS_STORED({
-										 {X86_REG_AX, 0xFF},
-								 });
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F3 0F 58 /r	ADDSS xmm1, m32		Add the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDSS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x12, 3.14_f32},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("addss xmm1, dword ptr [0x12]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3});
+	EXPECT_MEMORY_LOADED({0x12});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_ADDSD
+//
+
+// F2 0F 58 /r	ADDSD xmm1, xmm2	Add the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDSD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, ANY},
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("addsd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD0_1, X86_REG_XMMD1_1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F2 0F 58 /r	ADDSD xmm1, m64	Add the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDSD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 3.14_f64},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("addsd xmm1, qword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD1_1});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_ADDPS
+//
+
+// 0F 58 /r	ADDPS xmm1, xmm2	Add packed single-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("addps xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
 	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_add_ps"), {123, 456}},
+	});
+}
+
+// 0F 58 /r	ADDPS xmm1, m128	Add packed single-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("addps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_add_ps"), {456, ANY}},
+	});
+}
+
+//
+// X86_INS_FADDPD
+//
+
+// 	66 0F 58 /r	ADDPD xmm1, xmm2	Add packed double-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDPD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("addpd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_add_pd"), {123, 456}},
+	});
+}
+
+// 	66 0F 58 /r	ADDPD xmm1, m128	Add packed double-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDPD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("addpd xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_add_pd"), {456, ANY}},
+	});
+}
+
+//
+// X86_INS_SUBSS
+//
+
+// F3 0F 5C /r	SUBSS xmm1, xmm2		Subtract the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBSS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+		{X86_REG_XMM2, ANY},
+	});
+
+	emulate("subss xmm1, xmm2");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3, X86_REG_XMMF2_3});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F3 0F 5C /r	SUBSS xmm1, m32		Subtract the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBSS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x12, 3.14_f32},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("subss xmm1, dword ptr [0x12]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3});
+	EXPECT_MEMORY_LOADED({0x12});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_SUBSD
+//
+
+// F2 0F 5C /r	SUBSD xmm1, xmm2	Subtract the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBSD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, ANY},
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("subsd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD0_1, X86_REG_XMMD1_1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F2 0F 5C /r	SUBSD xmm1, m64	Subtract the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBSD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 3.14_f64},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("subsd xmm1, qword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD1_1});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_SUBPS
+//
+
+// 0F 5C /r	SUBPS xmm1, xmm2	Subtract packed single-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("subps xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_sub_ps"), {123, 456}},
+	});
+}
+
+// 0F 5C /r	SUBPS xmm1, m128	Subtract packed single-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("subps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_sub_ps"), {456, ANY}},
+	});
+}
+
+//
+// X86_INS_FSUBPD
+//
+
+// 	66 0F 5C /r	SUBPD xmm1, xmm2	Subtract packed double-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBPD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("subpd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_sub_pd"), {123, 456}},
+	});
+}
+
+// 66 0F 5C /r	SUBPD xmm1, m128	Subtract packed double-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBPD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("subpd xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_sub_pd"), {456, ANY}},
+	});
+}
+
+//
+// X86_INS_MULSS
+//
+
+// F3 0F 59 /r	MULSS xmm1, xmm2		Multiply the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULSS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+		{X86_REG_XMM2, ANY},
+	});
+
+	emulate("mulss xmm1, xmm2");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3, X86_REG_XMMF2_3});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F3 0F 59 /r	MULSS xmm1, m32		Multiply the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULSS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x12, 3.14_f32},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("mulss xmm1, dword ptr [0x12]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3});
+	EXPECT_MEMORY_LOADED({0x12});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_MULSD
+//
+
+// F2 0F 59 /r	MULSD xmm1, xmm2	Multiply the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULSD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, ANY},
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("mulsd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD0_1, X86_REG_XMMD1_1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F2 0F 59 /r	MULSD xmm1, m64	Multiply the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULSD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 3.14},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("mulsd xmm1, qword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD1_1});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_MULPS
+//
+
+// 0F 59 /r	MULPS xmm1, xmm2	Multiply packed single-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("mulps xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_mul_ps"), {123, 456}},
+	});
+}
+
+// 0F 59 /r	MULPS xmm1, m128	Multiply packed single-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("mulps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_mul_ps"), {456, ANY}},
+	});
+}
+
+//
+// X86_INS_MULPD
+//
+
+// 	66 0F 59 /r	MULPD xmm1, xmm2	Multiply packed double-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULPD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("mulpd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_mul_pd"), {123, 456}},
+	});
+}
+
+// 66 0F 59 /r	MULPD xmm1, m128	Multiply packed double-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MULPD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("mulpd xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_mul_pd"), {456, ANY}},
+	});
+}
+
+//
+// X86_INS_DIVSS
+//
+
+// F3 0F 5E /r	DIVSS xmm1, xmm2		Divide the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVSS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+		{X86_REG_XMM2, ANY},
+	});
+
+	emulate("divss xmm1, xmm2");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3, X86_REG_XMMF2_3});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F3 0F 5E /r	DIVSS xmm1, m32		Divide the low single-precision floating-point value from xmm2/mem to xmm1 and store
+// the result in xmm1.Separate value in ST(0) into exponent and significand,
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVSS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x12, 3.14_f32},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("divss xmm1, dword ptr [0x12]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF1_3});
+	EXPECT_MEMORY_LOADED({0x12});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_DIVSD
+//
+
+// F2 0F 5E /r	DIVSD xmm1, xmm2	Divide the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVSD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, ANY},
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("divsd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD0_1, X86_REG_XMMD1_1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+// F2 0F 5E /r	DIVSD xmm1, m64	Divide the low double-precision floating-point value from xmm2/mem to xmm1 and
+// store the result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVSD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 3.14_f64},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, ANY},
+	});
+
+	emulate("divsd xmm1, qword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMD1_1});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_VALUE_CALLED();
+}
+
+//
+// X86_INS_DIVPS
+//
+
+// 0F 5E /r	DIVPS xmm1, xmm2	Divide packed single-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("divps xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_div_ps"), {123, 456}},
+	});
+}
+
+// 0F 5E /r	DIVPS xmm1, m128	Divide packed single-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("divps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_div_ps"), {456, ANY}},
+	});
+}
+
+//
+// X86_INS_DIVPD
+//
+
+// 66 0F 5E /r	DIVPD xmm1, xmm2	Divide packed double-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVPD_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM0, 123},
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("divpd xmm0, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM0, X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM0, ANY},
+	});
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_div_pd"), {123, 456}},
+	});
+}
+
+// 66 0F 5E /r	DIVPD xmm1, m128	Divide packed double-precision floating-point values from m128 to xmm1 and store result in xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVPD_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, ANY},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 456},
+	});
+
+	emulate("divpd xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_VALUES_CALLED({
+		{_module.getFunction("_mm_div_pd"), {456, ANY}},
+	});
 }
 
 //
