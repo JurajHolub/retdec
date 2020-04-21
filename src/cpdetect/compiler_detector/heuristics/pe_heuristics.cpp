@@ -344,7 +344,7 @@ std::int32_t PeHeuristics::getInt32Unaligned(const std::uint8_t * codePtr)
  */
 const std::uint8_t * PeHeuristics::skip_NOP_JMP8_JMP32(const std::uint8_t * codeBegin, const std::uint8_t * codePtr, const std::uint8_t * codeEnd, std::size_t maxCount)
 {
-	while(codeBegin <= codePtr && codePtr < codeEnd && maxCount > 0)
+	while (codeBegin <= codePtr && codePtr < codeEnd && maxCount > 0)
 	{
 		ssize_t movePtrBy = 0;
 
@@ -719,18 +719,9 @@ void PeHeuristics::getEzirizReactorHeuristics()
 {
 	auto source = DetectionMethod::COMBINED;
 	auto strength = DetectionStrength::HIGH;
-
 	std::string version;
-	if (noOfSections > 3
-			&& fileParser.getSection("reacto")
-			&& !sections[1]->getSizeInFile()
-			&& !sections[2]->getSizeInFile()
-			&& !sections[3]->getSizeInFile())
-	{
-		version = "2.0 - 2.1";
-		source = DetectionMethod::SECTION_TABLE_H;
-	}
-	else if (canSearch)
+
+	if (canSearch)
 	{
 		const auto *sec0 = peParser.getPeSection(0);
 		const auto *sec1 = peParser.getPeSection(1);
@@ -745,7 +736,7 @@ void PeHeuristics::getEzirizReactorHeuristics()
 				&& search.findUnslashedSignature("5266686E204D182276B5331112330C6D0A204D18229EA129611C76B505190158;",
 					sec1->getOffset(), sec1->getOffset() + sec1->getLoadedSize() - 1))
 		{
-			version = "4.8 - 5.0";
+			version = "4.0.0.0 - 6.0.0.0";
 		}
 		else if (noOfSections >= 4
 				&& toolInfo.entryPointOffset
@@ -761,13 +752,11 @@ void PeHeuristics::getEzirizReactorHeuristics()
 				{
 					if (search.exactComparison("E8--------E9--------6A0C68;", toolInfo.epOffset))
 					{
-						version = "4.2";
+						version = "4.0.0.0 - 4.4.7.5";
 					}
-					else if (search.exactComparison(
-								"E8--------E9--------8BFF558BEC83EC208B45085657;",
-								toolInfo.epOffset))
+					else if (search.exactComparison("E8--------E9--------8BFF558BEC83EC208B45085657;", toolInfo.epOffset))
 					{
-						version = "4.5 - 4.7";
+						version = "4.5.0.0 - 6.2.9.2";
 					}
 				}
 			}
@@ -1142,12 +1131,36 @@ void PeHeuristics::getExcelsiorHeuristics()
  */
 void PeHeuristics::getVmProtectHeuristics()
 {
+	static const std::size_t BLOCK_COUNT = 64;
+	static const std::size_t BLOCK_SIZE = BLOCK_COUNT * sizeof(std::uint32_t);
 	auto source = DetectionMethod::COMBINED;
 	auto strength = DetectionStrength::HIGH;
 
 	if (noOfSections < 3 || (noOfSections == 3 && !sections[0]->getSizeInFile()))
 	{
 		return;
+	}
+
+	for (std::size_t i = 0; i < noOfSections; ++i) {
+		auto& section = sections[i];
+		if (section->isCode() && section->getSizeInFile() > BLOCK_SIZE)
+		{
+			std::uint32_t checksum = 0;
+			// Compute the sum of first 64 DWORDs of the executable section.
+			for (std::size_t i = 0; i < BLOCK_COUNT; ++i)
+			{
+				checksum += section->getBytesAtOffsetAsNumber<std::uint32_t>(
+					i * sizeof(std::uint32_t)
+				);
+			}
+			// If the checksum is correct, the sample is 100% packed with
+			// VMProtect 2.04+.
+			if (checksum == 0xB7896EB5)
+			{
+				addPacker(source, strength, "VMProtect", "2.04+");
+				return;
+			}
+		}
 	}
 
 	if (toolInfo.entryPointOffset && canSearch)
