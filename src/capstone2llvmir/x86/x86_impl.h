@@ -78,7 +78,6 @@ class Capstone2LlvmIrTranslatorX86_impl :
 //==============================================================================
 //
 	protected:
-		void generateRegistersAlternativeViews();
 		void generateRegistersAccessElements();
 		void generateRegistersCommon();
 		void generateRegisters16();
@@ -239,7 +238,6 @@ class Capstone2LlvmIrTranslatorX86_impl :
 		void translateAam(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateAdc(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateAdd(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
-		void translateAddss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateCvt(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateAnd(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateBsf(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
@@ -269,7 +267,6 @@ class Capstone2LlvmIrTranslatorX86_impl :
 		void translateDaaDas(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateDec(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateDiv(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
-		void translateDivss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateEnter(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateFabs(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateFadd(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
@@ -331,7 +328,6 @@ class Capstone2LlvmIrTranslatorX86_impl :
 		void translateMovsd(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateMoveString(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateMul(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
-		void translateMulss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateNeg(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateNop(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateNot(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
@@ -363,10 +359,13 @@ class Capstone2LlvmIrTranslatorX86_impl :
 		void translateStd(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateStoreString(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateSub(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
-		void translateSubss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateXchg(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateXlatb(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateXor(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateSseAdd(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateSseSub(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateSseMul(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateSseDiv(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 };
 
 } // namespace capstone2llvmir
