@@ -14442,6 +14442,139 @@ TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_DIVPD_reg_mem)
 }
 
 //
+// X86_INS_MOVSS
+//
+
+// F3 0F 10 /r	MOVSS xmm1, xmm2	Merge scalar single-precision floating-point value from xmm2 to xmm1 register.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MOVSS)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM3, 0x1111},
+		{X86_REG_XMM1, 0x2222},
+	});
+
+	emulate("movss xmm3, xmm1");
+
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMMF3_3, X86_REG_XMMF1_3});
+	EXPECT_NO_REGISTERS_STORED();
+}
+
+//
+// X86_INS_MOVAPS
+//
+
+// 0F 28 /r	MOVAPS m128, xmm1	Move aligned packed single-precision floating-point values from xmm2/mem to xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MOVAPS_mem_reg)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x3333},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x1122},
+	});
+
+	emulate("movaps xmmword ptr [0x1234], xmm1");
+
+	EXPECT_MEMORY_STORED({0x1234});
+	EXPECT_NO_MEMORY_LOADED();
+	EXPECT_NO_REGISTERS_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+}
+
+// 0F 29 /r	MOVAPS xmm1, m128	Move aligned packed single-precision floating-point values from m128 to xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MOVAPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("movaps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_REGISTERS_LOADED();
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, 0x7777},
+	});
+}
+
+// 0F 29 /r	MOVAPS xmm1, xmm2	Move aligned packed single-precision floating-point values from xmm2 to xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MOVAPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x1111},
+		{X86_REG_XMM2, 0x2222},
+	});
+
+	emulate_bin("0f 29 d1");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, 0x2222},
+	});
+}
+
+//
+// X86_INS_MOVUPS
+//
+
+// 0F 11 /r	MOVUPS xmm1, m128	Move unaligned packed single-precision floating-point values from m128 to xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MOVUPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("movups xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_NO_REGISTERS_LOADED();
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, 0x7777},
+	});
+}
+
+// 0F 11 /r	MOVUPS xmm1, xmm2	Move unaligned packed single-precision floating-point values from xmm2 to xmm1.
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MOVUPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x1111},
+		{X86_REG_XMM2, 0x2222},
+	});
+
+	emulate_bin("0f 10 ca");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, 0x2222},
+	});
+}
+
+//
 // TODO:
 // X86_INS_STOSB, X86_INS_STOSW, X86_INS_STOSD, X86_INS_STOSQ
 // + REP prefix variants

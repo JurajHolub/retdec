@@ -2588,24 +2588,31 @@ void Capstone2LlvmIrTranslatorX86_impl::translateMovss(cs_insn* i, cs_x86* xi, l
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	if (xi->operands[1].size == 16)
-	{
-		op1 = loadOp(xi->operands[1], irb, irb.getFloatTy());
-		op1 = irb.CreateLoad(irb.getFloatTy(), op1);
-	}
-	else
-	{
-		op1 = loadOp(xi->operands[1], irb, irb.getFloatTy());
-	}
+	llvm::Type* type = irb.getFloatTy();
+	op1 = loadOp(xi->operands[1], irb, type);
+	op1 = irb.CreateLoad(type, op1);
 
-	if (xi->operands[0].size == 16)
+	op0 = loadOp(xi->operands[0], irb, type);
+	irb.CreateStore(op1, op0);
+}
+
+void Capstone2LlvmIrTranslatorX86_impl::translateMovuaps(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb)
+{
+	EXPECT_IS_BINARY(i, xi, irb);
+
+	if (xi->operands[0].access == CS_AC_READ && xi->operands[1].access == CS_AC_WRITE) // movaps m128, xmm
 	{
-		op0 = loadOp(xi->operands[0], irb, irb.getFloatTy());
-		irb.CreateStore(op1, op0);
+		op0 = loadOp(xi->operands[0], irb);
+		storeOp(xi->operands[1], op0, irb);
+	}
+	else if (xi->operands[0].access == CS_AC_WRITE && xi->operands[1].access == CS_AC_READ) // movaps xmm, m128
+	{
+		op1 = loadOp(xi->operands[1], irb);
+		storeOp(xi->operands[0], op1, irb);
 	}
 	else
 	{
-		storeOp(xi->operands[0], op1, irb, eOpConv::ZEXT_TRUNC_OR_BITCAST);
+		throw GenericError("Not handled instruction operands.");
 	}
 }
 

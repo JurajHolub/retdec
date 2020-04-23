@@ -324,7 +324,6 @@ class Capstone2LlvmIrTranslatorX86_impl :
 		void translateLoadString(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateLoop(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateMov(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
-		void translateMovss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateMovsd(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateMoveString(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateMul(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
@@ -366,6 +365,10 @@ class Capstone2LlvmIrTranslatorX86_impl :
 		void translateSseSub(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateSseMul(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateSseDiv(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateMovss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateMovuaps(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateMovlps(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateMovhps(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 };
 
 } // namespace capstone2llvmir
