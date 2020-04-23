@@ -13785,7 +13785,7 @@ TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_ADDPS_reg_mem)
 }
 
 //
-// X86_INS_FADDPD
+// X86_INS_ADDPD
 //
 
 // 	66 0F 58 /r	ADDPD xmm1, xmm2	Add packed double-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
@@ -13987,7 +13987,7 @@ TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_SUBPS_reg_mem)
 }
 
 //
-// X86_INS_FSUBPD
+// X86_INS_SUBPD
 //
 
 // 	66 0F 5C /r	SUBPD xmm1, xmm2	Subtract packed double-precision floating-point values from xmm2 to xmm1 and store result in xmm1.
@@ -14571,6 +14571,362 @@ TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_MOVUPS_reg_reg)
 	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM2});
 	EXPECT_JUST_REGISTERS_STORED({
 		{X86_REG_XMM1, 0x2222},
+	});
+}
+
+//
+// X86_INS_CMPPS
+//
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPEQPS xmm1, xmm2	CMPPS xmm1, xmm2, 0
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPEQPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpeqps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPEQPS xmm1, m128	CMPPS xmm1, m128, 0
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPEQPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpeqps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPLTPS xmm1, xmm2	CMPPS xmm1, xmm2, 1
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPLTPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpltps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPLTPS xmm1, m128	CMPPS xmm1, m128, 1
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPLTPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpltps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPLEPS xmm1, xmm2	CMPPS xmm1, xmm2, 2
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPLEPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpleps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPLEPS xmm1, m128	CMPPS xmm1, m128, 2
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPLEPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpleps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPUNORDPS xmm1, xmm2	CMPPS xmm1, xmm2, 3
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPUNORDPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpunordps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPUNORDPS xmm1, m128	CMPPS xmm1, m128, 3
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPUNORDPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpunordps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPNEQPS xmm1, xmm2	CMPPS xmm1, xmm2, 4
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPNEQPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpneqps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPNEQPS xmm1, m128	CMPPS xmm1, m128, 4
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPNEQPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpneqps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPNLTPS xmm1, xmm2	CMPPS xmm1, xmm2, 5
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPNLTPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpnltps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPNLTPS xmm1, m128	CMPPS xmm1, m128, 5
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPNLTPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpnltps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPNLEPS xmm1, xmm2	CMPPS xmm1, xmm2, 6
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPNLEPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpnleps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPNLEPS xmm1, m128	CMPPS xmm1, m128, 6
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPNLEPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpnleps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPORDPS xmm1, xmm2	CMPPS xmm1, xmm2, 7
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPORDPS_reg_reg)
+{
+	SKIP_MODE_16;
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+		{X86_REG_XMM2, 0x1234},
+	});
+
+	emulate("cmpordps xmm1, xmm2");
+
+	EXPECT_NO_MEMORY_LOADED_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1, X86_REG_XMM2});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
+	});
+}
+
+// 0F C2	CMPPS xmm1, xmm2/m128, imm8	Compare packed single-precision floating-point values in xmm2/m128 and xmm1 using bits 2:0 of imm8 as a comparison predicate.
+// CMPORDPS xmm1, m128	CMPPS xmm1, m128, 7
+TEST_P(Capstone2LlvmIrTranslatorX86Tests, X86_INS_CMPORDPS_reg_mem)
+{
+	SKIP_MODE_16;
+
+	setMemory({
+		{0x1234, 0x7777},
+	});
+
+	setRegisters({
+		{X86_REG_XMM1, 0x9876},
+	});
+
+	emulate("cmpordps xmm1, xmmword ptr [0x1234]");
+
+	EXPECT_JUST_MEMORY_LOADED({0x1234});
+	EXPECT_NO_MEMORY_STORED();
+	EXPECT_JUST_REGISTERS_LOADED({X86_REG_XMM1});
+	EXPECT_JUST_REGISTERS_STORED({
+		{X86_REG_XMM1, ANY},
 	});
 }
 

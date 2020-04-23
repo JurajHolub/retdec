@@ -255,7 +255,7 @@ class Capstone2LlvmIrTranslatorX86_impl :
 		void translateCli(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateCmc(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateCMovCc(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
-		void translateCmpss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
+		void translateCmpps(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateCmpxchg(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateCmpxchg8b(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);
 		void translateCmpxchg16b(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb);

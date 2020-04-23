@@ -5805,34 +5805,38 @@ void Capstone2LlvmIrTranslatorX86_impl::translateSseDiv(cs_insn* i, cs_x86* xi, 
 /**
  * X86_INS_CMPSS
  */
-void Capstone2LlvmIrTranslatorX86_impl::translateCmpss(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb)
+void Capstone2LlvmIrTranslatorX86_impl::translateCmpps(cs_insn* i, cs_x86* xi, llvm::IRBuilder<>& irb)
 {
 	EXPECT_IS_BINARY(i, xi, irb);
 
-	//translatePseudoAsmGeneric(i, xi, irb);
+	llvm::Type* type = irb.getInt128Ty();
+	op0 = loadOp(xi->operands[0], irb, type);
+	op1 = loadOp(xi->operands[1], irb, type);
 
-	op0 = loadOp(xi->operands[0], irb);
-	op1 = loadOp(xi->operands[1], irb);
-return;
+	const std::map<int, std::string> intrins {
+		{X86_INS_CMPEQPS, "_mm_cmpeq_ps"},
+		{X86_INS_CMPLTPS, "_mm_cmplt_ps"},
+		{X86_INS_CMPLEPS, "_mm_cmple_ps"},
+		{X86_INS_CMPUNORDPS, "_mm_cmpunord_ps"},
+		{X86_INS_CMPNEQPS, "_mm_cmpneq_ps"},
+		{X86_INS_CMPNLTPS, "_mm_cmpnlt_ps"},
+		{X86_INS_CMPNLEPS, "_mm_cmpnle_ps"},
+		{X86_INS_CMPORDPS, "_mm_cmpord_ps"},
+	};
 
-	//op0 = irb.CreateBitCast(op0, llvm::Type::getFP128Ty(_module->getContext()));
-	//op1 = irb.CreateBitCast(op1, llvm::Type::getFP128Ty(_module->getContext()));
-	//op0->dump();
-	//op1->dump();
+	if (intrins.find(i->id) == intrins.end())
+	{
+		throw GenericError("Unhandled inst ID.");
+	}
 
-	//switch (i->id)
-	//{
-	//	case X86_INS_CMPEQSS:
-	//	case X86_INS_CMPEQSD:
-	//		op2 = irb.CreateFCmpUGT(op0, op1); break;
-	//	default: throw GenericError("Unhandled inst ID.");
-	//}
-
-	//auto* i32 = llvm::IntegerType::getInt32Ty(_module->getContext());
-	//op2 = irb.CreateSExt(op2, i32);
-
-	////TODO only lower 32 bits
-	//storeRegister(xi->operands[0].reg, op2, irb);
+	llvm::Function* fnc = getPseudoAsmFunction(
+			i,
+			type,
+			llvm::ArrayRef<llvm::Type*>{op0->getType(), op1->getType()},
+			intrins.find(i->id)->second
+	);
+	op2 = irb.CreateCall(fnc, llvm::ArrayRef<llvm::Value*>{op0, op1});
+	storeRegister(xi->operands[0].reg, op2, irb);
 }
 
 } // namespace capstone2llvmir
