@@ -28,3 +28,31 @@ ExternalProject_Get_Property(eigen_project source_dir)
 set(EIGEN_INCLUDE_DIR "${source_dir}/Eigen")
 
 target_include_directories(eigen INTERFACE ${EIGEN_INCLUDE_DIR})
+
+# Install targets.
+install(TARGETS eigen
+		EXPORT eigen-targets
+		)
+
+# Export targets.
+install(EXPORT eigen-targets
+		FILE "retdec-eigen-targets.cmake"
+		NAMESPACE retdec::deps::
+		DESTINATION ${RETDEC_INSTALL_CMAKE_DIR}
+		)
+
+# Configure config file.
+configure_package_config_file(
+		"retdec-eigen-config.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/retdec-eigen-config.cmake"
+		INSTALL_DESTINATION ${RETDEC_INSTALL_CMAKE_DIR}
+		PATH_VARS
+)
+
+# Install CMake files.
+install(
+		FILES
+		"${CMAKE_CURRENT_BINARY_DIR}/retdec-eigen-config.cmake"
+		DESTINATION
+		"${RETDEC_INSTALL_CMAKE_DIR}"
+)
